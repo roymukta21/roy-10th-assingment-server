@@ -29,7 +29,7 @@ async function run() {
   try {
     await client.connect();
 
-    const db = client.db("StudyMate_DB");
+    const db = client.db("StudyMate");
     const partnersCollection = db.collection("Partners");
     const connectionsCollection = db.collection("Connections");
 
