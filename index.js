@@ -22,7 +22,7 @@ const client = new MongoClient(uri, {
 });
 
 app.get("/", (req, res) => {
-  res.send("🎓 StudyMate Server is Running Successfully!");
+  res.send("StudyMate Server is Running Successfully!");
 });
 
 async function run() {
@@ -185,7 +185,7 @@ async function run() {
 
     // Test connection
     await client.db("admin").command({ ping: 1 });
-    console.log("✅ Connected to MongoDB successfully for StudyMate!");
+    console.log(" Connected to MongoDB successfully for StudyMate!");
   } finally {
     // await client.close(); // keep open for deployment
   }
@@ -194,5 +194,5 @@ async function run() {
 run().catch(console.dir);
 
 app.listen(port, () => {
-  console.log(`🚀 StudyMate server running on port: ${port}`);
+  console.log(`StudyMate server running on port: ${port}`);
 });
