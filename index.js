@@ -33,27 +33,25 @@ async function run() {
     const partnersCollection = db.collection("Partners");
     const connectionsCollection = db.collection("Connections");
 
-    
     //  CREATE Partner Profile
-   
+
     app.post("/partners", async (req, res) => {
       const newProfile = req.body;
       const result = await partnersCollection.insertOne(newProfile);
       res.send(result);
     });
 
-   
-    //  READ All Partners 
+    //  READ All Partners
     app.get("/partners", async (req, res) => {
       const { search, sort } = req.query;
       let query = {};
 
-      // Search by subject 
+      // Search by subject
       if (search) {
         query.subject = { $regex: search, $options: "i" };
       }
 
-      // Sort by Experience Level 
+      // Sort by Experience Level
       let sortOption = {};
       if (sort === "asc") {
         sortOption = { experienceLevel: 1 };
@@ -66,19 +64,27 @@ async function run() {
       res.send(result);
     });
 
-    
     //  READ Single Partner Details
-   
+
     app.get("/partners/:id", async (req, res) => {
       const id = req.params.id;
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ message: "Invalid ID format" });
+      }
+
       const query = { _id: new ObjectId(id) };
       const result = await partnersCollection.findOne(query);
+
+      if (!result) {
+    return res.status(404).send({ message: "Partner not found" });
+  }
+
       res.send(result);
     });
 
-    
     //  UPDATE Partner Profile
-   
+
     app.patch("/partners/:id", async (req, res) => {
       const id = req.params.id;
       const updatedData = req.body;
@@ -98,9 +104,8 @@ async function run() {
       res.send(result);
     });
 
-    
     //  DELETE Partner Profile
-    
+
     app.delete("/partners/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -108,8 +113,7 @@ async function run() {
       res.send(result);
     });
 
-    
-    //  Send Partner Request 
+    //  Send Partner Request
     app.post("/connections", async (req, res) => {
       const request = req.body;
       const { partnerId, senderEmail } = request;
@@ -134,9 +138,8 @@ async function run() {
       res.send(result);
     });
 
-    
     //  Get My Connections
-   
+
     app.get("/connections", async (req, res) => {
       const email = req.query.email;
       let query = {};
@@ -147,8 +150,7 @@ async function run() {
       res.send(result);
     });
 
-    
-    //  UPDATE Connection 
+    //  UPDATE Connection
     app.patch("/connections/:id", async (req, res) => {
       const id = req.params.id;
       const updatedInfo = req.body;
@@ -165,9 +167,8 @@ async function run() {
       res.send(result);
     });
 
-    
     //  DELETE Connection
-    
+
     app.delete("/connections/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -175,8 +176,7 @@ async function run() {
       res.send(result);
     });
 
-   
-    //  GET Top Rated Partners 
+    //  GET Top Rated Partners
     app.get("/top-partners", async (req, res) => {
       const cursor = partnersCollection.find().sort({ rating: -1 }).limit(3);
       const result = await cursor.toArray();
