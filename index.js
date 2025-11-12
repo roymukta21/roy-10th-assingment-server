@@ -39,7 +39,9 @@ async function run() {
         const newProfile = req.body;
 
         if (!newProfile.name || !newProfile.email) {
-          return res.status(400).send({ message: "Name and email are required!" });
+          return res
+            .status(400)
+            .send({ message: "Name and email are required!" });
         }
 
         const result = await partnersCollection.insertOne({
@@ -51,7 +53,9 @@ async function run() {
         res.status(201).send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to create partner profile", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to create partner profile", error: err });
       }
     });
 
@@ -79,7 +83,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to fetch partners", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to fetch partners", error: err });
       }
     });
 
@@ -102,7 +108,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to fetch partner details", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to fetch partner details", error: err });
       }
     });
 
@@ -127,7 +135,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to update partner profile", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to update partner profile", error: err });
       }
     });
 
@@ -140,7 +150,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to delete partner profile", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to delete partner profile", error: err });
       }
     });
 
@@ -148,7 +160,7 @@ async function run() {
     app.post("/connections", async (req, res) => {
       try {
         const request = req.body;
-        const { partnerId, senderEmail } = request;
+        const { partnerId, senderEmail, message } = request;
 
         // Check for duplicate request
         const existingRequest = await connectionsCollection.findOne({
@@ -165,12 +177,21 @@ async function run() {
         const update = { $inc: { partnerCount: 1 } };
         await partnersCollection.updateOne(partnerQuery, update);
 
+        // Prepare connection data
+        const connectionData = {
+          ...request,
+          message: message || "No message added",
+          sentAt: new Date(),
+        };
+
         // Save connection data
         const result = await connectionsCollection.insertOne(request);
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to send partner request", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to send partner request", error: err });
       }
     });
 
@@ -186,7 +207,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to fetch connections", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to fetch connections", error: err });
       }
     });
 
@@ -208,7 +231,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to update connection", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to update connection", error: err });
       }
     });
 
@@ -221,7 +246,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to delete connection", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to delete connection", error: err });
       }
     });
 
@@ -233,7 +260,9 @@ async function run() {
         res.send(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: "Failed to fetch top partners", error: err });
+        res
+          .status(500)
+          .send({ message: "Failed to fetch top partners", error: err });
       }
     });
 
