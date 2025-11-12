@@ -185,7 +185,7 @@ async function run() {
         };
 
         // Save connection data
-        const result = await connectionsCollection.insertOne(request);
+        const result = await connectionsCollection.insertOne(connectionData);
         res.send(result);
       } catch (err) {
         console.error(err);
