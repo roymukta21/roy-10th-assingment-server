@@ -34,158 +34,212 @@ async function run() {
     const connectionsCollection = db.collection("Connections");
 
     //  CREATE Partner Profile
-
     app.post("/partners", async (req, res) => {
-      const newProfile = req.body;
-      const result = await partnersCollection.insertOne(newProfile);
-      res.send(result);
+      try {
+        const newProfile = req.body;
+
+        if (!newProfile.name || !newProfile.email) {
+          return res.status(400).send({ message: "Name and email are required!" });
+        }
+
+        const result = await partnersCollection.insertOne({
+          ...newProfile,
+          rating: newProfile.rating || 0,
+          partnerCount: newProfile.partnerCount || 0,
+        });
+
+        res.status(201).send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to create partner profile", error: err });
+      }
     });
 
     //  READ All Partners
     app.get("/partners", async (req, res) => {
-      const { search, sort } = req.query;
-      let query = {};
+      try {
+        const { search, sort } = req.query;
+        let query = {};
 
-      // Search by subject
-      if (search) {
-        query.subject = { $regex: search, $options: "i" };
+        // Search by subject
+        if (search) {
+          query.subject = { $regex: search, $options: "i" };
+        }
+
+        // Sort by Experience Level
+        let sortOption = {};
+        if (sort === "asc") {
+          sortOption = { experienceLevel: 1 };
+        } else if (sort === "desc") {
+          sortOption = { experienceLevel: -1 };
+        }
+
+        const cursor = partnersCollection.find(query).sort(sortOption);
+        const result = await cursor.toArray();
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to fetch partners", error: err });
       }
-
-      // Sort by Experience Level
-      let sortOption = {};
-      if (sort === "asc") {
-        sortOption = { experienceLevel: 1 };
-      } else if (sort === "desc") {
-        sortOption = { experienceLevel: -1 };
-      }
-
-      const cursor = partnersCollection.find(query).sort(sortOption);
-      const result = await cursor.toArray();
-      res.send(result);
     });
 
     //  READ Single Partner Details
-
     app.get("/partners/:id", async (req, res) => {
-      const id = req.params.id;
+      try {
+        const id = req.params.id;
 
-      if (!ObjectId.isValid(id)) {
-        return res.status(400).send({ message: "Invalid ID format" });
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({ message: "Invalid ID format" });
+        }
+
+        const query = { _id: new ObjectId(id) };
+        const result = await partnersCollection.findOne(query);
+
+        if (!result) {
+          return res.status(404).send({ message: "Partner not found" });
+        }
+
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to fetch partner details", error: err });
       }
-
-      const query = { _id: new ObjectId(id) };
-      const result = await partnersCollection.findOne(query);
-
-      if (!result) {
-    return res.status(404).send({ message: "Partner not found" });
-  }
-
-      res.send(result);
     });
 
     //  UPDATE Partner Profile
-
     app.patch("/partners/:id", async (req, res) => {
-      const id = req.params.id;
-      const updatedData = req.body;
-      const query = { _id: new ObjectId(id) };
-      const update = {
-        $set: {
-          name: updatedData.name,
-          subject: updatedData.subject,
-          studyMode: updatedData.studyMode,
-          availabilityTime: updatedData.availabilityTime,
-          location: updatedData.location,
-          experienceLevel: updatedData.experienceLevel,
-          rating: updatedData.rating,
-        },
-      };
-      const result = await partnersCollection.updateOne(query, update);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const updatedData = req.body;
+        const query = { _id: new ObjectId(id) };
+        const update = {
+          $set: {
+            name: updatedData.name,
+            subject: updatedData.subject,
+            studyMode: updatedData.studyMode,
+            availabilityTime: updatedData.availabilityTime,
+            location: updatedData.location,
+            experienceLevel: updatedData.experienceLevel,
+            rating: updatedData.rating,
+          },
+        };
+        const result = await partnersCollection.updateOne(query, update);
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to update partner profile", error: err });
+      }
     });
 
     //  DELETE Partner Profile
-
     app.delete("/partners/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await partnersCollection.deleteOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await partnersCollection.deleteOne(query);
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to delete partner profile", error: err });
+      }
     });
 
     //  Send Partner Request
     app.post("/connections", async (req, res) => {
-      const request = req.body;
-      const { partnerId, senderEmail } = request;
+      try {
+        const request = req.body;
+        const { partnerId, senderEmail } = request;
 
-      // Check for duplicate request
-      const existingRequest = await connectionsCollection.findOne({
-        partnerId: partnerId,
-        senderEmail: senderEmail,
-      });
+        // Check for duplicate request
+        const existingRequest = await connectionsCollection.findOne({
+          partnerId: partnerId,
+          senderEmail: senderEmail,
+        });
 
-      if (existingRequest) {
-        return res.status(400).send({ message: "Request already sent!" });
+        if (existingRequest) {
+          return res.status(400).send({ message: "Request already sent!" });
+        }
+
+        // Increment partner count
+        const partnerQuery = { _id: new ObjectId(partnerId) };
+        const update = { $inc: { partnerCount: 1 } };
+        await partnersCollection.updateOne(partnerQuery, update);
+
+        // Save connection data
+        const result = await connectionsCollection.insertOne(request);
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to send partner request", error: err });
       }
-
-      // Increment partner count
-      const partnerQuery = { _id: new ObjectId(partnerId) };
-      const update = { $inc: { partnerCount: 1 } };
-      await partnersCollection.updateOne(partnerQuery, update);
-
-      // Save connection data
-      const result = await connectionsCollection.insertOne(request);
-      res.send(result);
     });
 
     //  Get My Connections
-
     app.get("/connections", async (req, res) => {
-      const email = req.query.email;
-      let query = {};
-      if (email) {
-        query.senderEmail = email;
+      try {
+        const email = req.query.email;
+        let query = {};
+        if (email) {
+          query.senderEmail = email;
+        }
+        const result = await connectionsCollection.find(query).toArray();
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to fetch connections", error: err });
       }
-      const result = await connectionsCollection.find(query).toArray();
-      res.send(result);
     });
 
     //  UPDATE Connection
     app.patch("/connections/:id", async (req, res) => {
-      const id = req.params.id;
-      const updatedInfo = req.body;
-      const query = { _id: new ObjectId(id) };
-      const update = {
-        $set: {
-          name: updatedInfo.name,
-          subject: updatedInfo.subject,
-          studyMode: updatedInfo.studyMode,
-          location: updatedInfo.location,
-        },
-      };
-      const result = await connectionsCollection.updateOne(query, update);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const updatedInfo = req.body;
+        const query = { _id: new ObjectId(id) };
+        const update = {
+          $set: {
+            name: updatedInfo.name,
+            subject: updatedInfo.subject,
+            studyMode: updatedInfo.studyMode,
+            location: updatedInfo.location,
+          },
+        };
+        const result = await connectionsCollection.updateOne(query, update);
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to update connection", error: err });
+      }
     });
 
     //  DELETE Connection
-
     app.delete("/connections/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await connectionsCollection.deleteOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await connectionsCollection.deleteOne(query);
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to delete connection", error: err });
+      }
     });
 
     //  GET Top Rated Partners
     app.get("/top-partners", async (req, res) => {
-      const cursor = partnersCollection.find().sort({ rating: -1 }).limit(3);
-      const result = await cursor.toArray();
-      res.send(result);
+      try {
+        const cursor = partnersCollection.find().sort({ rating: -1 }).limit(3);
+        const result = await cursor.toArray();
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Failed to fetch top partners", error: err });
+      }
     });
 
     // Test connection
     await client.db("admin").command({ ping: 1 });
-    console.log(" Connected to MongoDB successfully for StudyMate!");
+    console.log("Connected to MongoDB successfully for StudyMate!");
   } finally {
     // await client.close(); // keep open for deployment
   }
