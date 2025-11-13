@@ -14,4 +14,4 @@ yarn-error.log
 Thumbs.db
 
 # Vercel local configuration 
-.vercel
+.vercel/
