@@ -213,27 +213,36 @@ async function run() {
       }
     });
 
-    //  UPDATE Connection
-    app.patch("/connections/:id", async (req, res) => {
+    // ✅ UPDATE Connection
+    app.put("/connections/:_id", async (req, res) => {
       try {
         const id = req.params.id;
         const updatedInfo = req.body;
-        const query = { _id: new ObjectId(id) };
-        const update = {
+
+        console.log("🟡 Incoming PUT Request jj for:", id);
+    console.log("🟢 Body Data:", updatedInfo);
+
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
           $set: {
-            name: updatedInfo.name,
             subject: updatedInfo.subject,
             studyMode: updatedInfo.studyMode,
-            location: updatedInfo.location,
           },
         };
-        const result = await connectionsCollection.updateOne(query, update);
-        res.send(result);
-      } catch (err) {
-        console.error(err);
-        res
-          .status(500)
-          .send({ message: "Failed to update connection", error: err });
+
+        const result = await connectionsCollection.updateOne(filter, updateDoc);
+
+        if (result.modifiedCount > 0) {
+          res.send({
+            success: true,
+            message: "Connection updated successfully",
+          });
+        } else {
+          res.send({ success: false, message: "No changes made" });
+        }
+      } catch (error) {
+        console.error("Error updating connection:", error);
+        res.status(500).send({ error: "Failed to update connection" });
       }
     });
 
