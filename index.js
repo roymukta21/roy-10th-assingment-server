@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("StudyMate");
     const partnersCollection = db.collection("Partners");
@@ -267,7 +267,7 @@ async function run() {
     });
 
     // Test connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Connected to MongoDB successfully for StudyMate!");
   } finally {
     // await client.close(); // keep open for deployment
