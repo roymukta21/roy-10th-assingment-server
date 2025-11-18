@@ -62,12 +62,17 @@ async function run() {
     //  READ All Partners
     app.get("/partners", async (req, res) => {
       try {
-        const { search, sort } = req.query;
+        const { search, sort, email } = req.query;
         let query = {};
 
         // Search by subject
         if (search) {
           query.subject = { $regex: search, $options: "i" };
+        }
+
+        // Search by email (FIXED)
+        if (email) {
+          query.email = email;
         }
 
         // Sort by Experience Level
@@ -141,6 +146,28 @@ async function run() {
       }
     });
 
+    // Increment partnerCount
+    app.patch("/partners/:id/increment", async (req, res) => {
+      try {
+        const id = req.params.id;
+        if (!ObjectId.isValid(id))
+          return res.status(400).send({ message: "Invalid ID" });
+
+        const increment = req.body.increment || 1;
+        const result = await partnersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $inc: { partnerCount: increment } }
+        );
+
+        res.send({ success: true, modifiedCount: result.modifiedCount });
+      } catch (err) {
+        console.error(err);
+        res
+          .status(500)
+          .send({ message: "Failed to increment partner count", error: err });
+      }
+    });
+
     //  DELETE Partner Profile
     app.delete("/partners/:id", async (req, res) => {
       try {
@@ -165,9 +192,9 @@ async function run() {
         // Check for duplicate request
         const existingRequest = await connectionsCollection.findOne({
           partnerId: partnerId,
-          senderEmail: senderEmail,
+          senderEmail,
         });
-
+        console.log(existingRequest);
         if (existingRequest) {
           return res.status(400).send({ message: "Request already sent!" });
         }
@@ -176,6 +203,7 @@ async function run() {
         const partnerQuery = { _id: new ObjectId(partnerId) };
         const update = { $inc: { partnerCount: 1 } };
         await partnersCollection.updateOne(partnerQuery, update);
+        await partnersCollection.updateOne({email:senderEmail},{$inc:{partnerCount: 1}})
 
         // Prepare connection data
         const connectionData = {
@@ -213,25 +241,23 @@ async function run() {
       }
     });
 
-    // ✅ UPDATE Connection
+    //  UPDATE Connection
     app.put("/connections/:_id", async (req, res) => {
       try {
-        const id = req.params.id;
+        const id = req.params._id;
         const updatedInfo = req.body;
-
-        console.log("🟡 Incoming PUT Request jj for:", id);
-    console.log("🟢 Body Data:", updatedInfo);
-
+        console.log(updatedInfo, id);
         const filter = { _id: new ObjectId(id) };
         const updateDoc = {
           $set: {
-            subject: updatedInfo.subject,
-            studyMode: updatedInfo.studyMode,
+            partnerSubject: updatedInfo.subject,
+
+            partnerStudyMode: updatedInfo.studyMode,
           },
         };
 
         const result = await connectionsCollection.updateOne(filter, updateDoc);
-
+console.log(result)
         if (result.modifiedCount > 0) {
           res.send({
             success: true,
