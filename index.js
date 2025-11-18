@@ -194,7 +194,7 @@ async function run() {
           partnerId: partnerId,
           senderEmail,
         });
-        console.log(existingRequest);
+        //console.log(existingRequest);
         if (existingRequest) {
           return res.status(400).send({ message: "Request already sent!" });
         }
@@ -246,7 +246,7 @@ async function run() {
       try {
         const id = req.params._id;
         const updatedInfo = req.body;
-        console.log(updatedInfo, id);
+        //console.log(updatedInfo, id);
         const filter = { _id: new ObjectId(id) };
         const updateDoc = {
           $set: {
@@ -257,7 +257,7 @@ async function run() {
         };
 
         const result = await connectionsCollection.updateOne(filter, updateDoc);
-console.log(result)
+//console.log(result)
         if (result.modifiedCount > 0) {
           res.send({
             success: true,
